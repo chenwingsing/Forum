@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nowcoder.community.dao.MessageMapper">
+    <sql id="selectFields">
+        id, from_id, to_id, conversation_id, content, status, create_time
+    </sql>
+
+    <sql id="insertFields">
+        from_id, to_id, conversation_id, content, status, create_time
+    </sql>
+    
+    <select id="selectConversations" resultType="Message">
+        select <include refid="selectFields"></include>
+        from message
+        where id in (
+            select max(id) from message<!--max可以查到最新一条消息-->
+            where status != 2<!--2是已经删除的意思-->
+            and from_id != 1<!--1是系统消息的意思-->
+            and (from_id = #{userId} or to_id = #{userId})<!--两种情况都要考虑，因为可能是收件方，可能是发件方-->
+            group by conversation_id
+        )
+        order by id desc
+        limit #{offest}, #{limit}
+    </select>
+
+    <select id="selectConversationCount" resultType="int">
+        select count(m.maxid) from ( <!--count要挨着()，不然报错-->
+            select max(id) as maxid from message
+            where status != 2
+            and from_id != 1
+            and (from_id = #{userId} or to_id = #{userId})
+            group by conversation_id
+        ) as m
+    </select>
+
+    <select id="selectLetters" resultType="Message">
+        select <include refid="selectFields"></include>
+        from message
+        where status != 2
+        and from_id != 1
+        and conversation_id = #{conversationId}
+        order by id desc
+        limit #{offest},#{limit}
+    </select>
+
+    <select id="selectLetterCount" resultType="int">
+        select count(id)
+        from message
+        where status != 2
+        and from_id !=1
+        and conversation_id = #{conversationId}
+    </select>
+
+    <select id="selectLetterUnreadCount" resultType="int">
+        select count(id)
+        from message
+        where status = 0
+        and from_id != 1
+        and to_id = #{userId}<!--一定是别人发才是未读-->
+        <if test="conversationId!=null">
+            and conversation_id = #{conversationId}
+        </if>
+    </select>
+
+    <insert id="insertMessage" parameterType="Message" keyProperty="id"><!--keyProperty可以执行完回填id，完成自增操作-->
+        insert into message(<include refid="insertFields"></include>)
+        values(#{fromId},#{toId},#{conversationId},#{content},#{status},#{createTime})
+    </insert>
+
+    <update id="updateStatus">
+        update message set status = #{status}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!--系统通知的sql,查询数据，数量之类的-->
+
+    <select id="selectLatestNotice" resultType="Message">
+        select <include refid="selectFields"></include>
+        from message
+        where id in (
+             select max(id) from message  <!--最新的数据-->
+             where status != 2
+             and from_id = 1
+             and to_id = #{userId}
+             and conversation_id = #{topic}
+        )
+    </select>
+
+    <select id="selectNoticeCount" resultType="int">
+        select count(id) from message
+        where status != 2
+        and from_id = 1
+        and to_id = #{userId}
+        and conversation_id = #{topic}
+    </select>
+
+    <select id="selectNoticeUnreadCount" resultType="int">
+        select count(id) from message
+        where status = 0
+        and from_id = 1
+        and to_id = #{userId}
+        <if test="topic!=null">  <!--如果传入topic，我们是可以查到所有主题的数量，而不需要累加-->
+            and conversation_id = #{topic}
+        </if>
+    </select>
+
+    <select id="selectNotices" resultType="Message">
+        select <include refid="selectFields"></include>
+        from message
+        where status != 2
+        and from_id = 1
+        and to_id = #{userId}
+        and conversation_id = #{topic}
+        order by create_time desc
+        limit #{offset}, #{limit}
+    </select>
+</mapper>
