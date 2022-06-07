@@ -102,7 +102,7 @@ public class DiscussPostService {
         }
         //转义HTML标签，因为怕有些故意在内容上写<script>之类的东西，会被浏览器识别为标签，加了这个可以让<script>被浏览器显示正常文本，而不是被识别为标签，具体可以看数据库看看存成什么格式
         post.setTitle(HtmlUtils.htmlEscape(post.getTitle()));
-        post.setContent(HtmlUtils.htmlEscape(post.getTitle()));
+        post.setContent(HtmlUtils.htmlEscape(post.getContent()));
         //过滤敏感词
         post.setTitle(sensitiveFilter.filter(post.getTitle()));
         post.setContent(sensitiveFilter.filter(post.getContent()));
