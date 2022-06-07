@@ -37,14 +37,14 @@
     </insert>
 
     <update id="updateStatus">
-        update user set status = #{arg1} where id = #{arg0}
+        update user set status = #{status} where id = #{id}
     </update>
 
     <update id="updateHeader">
-        update user set header_url = #{arg1} where id = #{arg0}
+        update user set header_url = #{header_url} where id = #{id}
     </update>
 
     <update id="updatePassword">
-        update user set password = #{arg1} where id = #{arg0}
+        update user set password = #{password} where id = #{id}
     </update>
 </mapper>
